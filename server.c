@@ -1,5 +1,5 @@
 /**
- * @file sender-udp.c
+ * @file receiver-udp.c
  * @author Julien Montavont
  * @version 1.0
  *
@@ -18,12 +18,14 @@
  *
  * @section DESCRIPTION
  *
- * Simple program that creates an IPv4 UDP socket and sends a string
- * to a remote host. The string, IPv4 addr and port number of the
- * remote host are passed as command line parameters as follow:
- * ./pg_name IPv4_addr port_number string
+ * Simple program that creates an IPv4 UDP socket and waits for the
+ * reception of a string. The program takes a single parameter which
+ * is the local communication port. The IPv4 addr associated to the
+ * socket will be all available addr on the host (use INADDR_ANY
+ * maccro).
  */
 
+#include "server.h"
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -34,21 +36,24 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-#include "server.h"
+
 
 
 int main(int argc, char **argv)
 {
-    int sockfd;
-    socklen_t addrlen;
-    struct sockaddr_in6 dest;
+	int sockfd;
+	char buf[1024];
+	socklen_t addrlen;
 
-    // check the number of args on command line
-	if(argc != 4)
-    {
-        printf("USAGE: %s ./client IP PORT COMMANDE HASH [IP]\n", argv[0]);
-        exit(-1);
-    }
+	struct sockaddr_in6 my_addr;
+	struct sockaddr_in6 client;
+
+	// check the number of args on command line
+	if(argc != 3)
+	{
+		printf("Usage: %s IP port\n", argv[0]);
+		exit(-1);
+	}
 
 	// socket factory
 	if((sockfd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)) == -1)
@@ -57,28 +62,34 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	// init remote addr structure and other params
-	dest.sin6_family = AF_INET6;
-	dest.sin6_port   = htons(atoi(argv[2]));
-	addrlen         = sizeof(struct sockaddr_in6);
 
-	// get addr from command line and convert it
-	if(inet_pton(AF_INET6, argv[1], &dest.sin6_addr) != 1)
+	// init local addr structure and other params
+	inet_pton(AF_INET6, argv[1], &(my_addr.sin6_addr));
+	my_addr.sin6_family      = AF_INET6;
+	my_addr.sin6_port        = htons(atoi(argv[2]));
+	my_addr.sin6_addr 		= in6addr_any;
+	addrlen                 = sizeof(struct sockaddr_in6);
+	memset(buf,'\0',1024);
+
+	// bind addr structure with socket
+	if(bind(sockfd, (struct sockaddr *) &my_addr, addrlen) == -1)
 	{
-    printf("ERROR\n");
-		perror("inet_pton");
+		perror("bind");
 		close(sockfd);
 		exit(EXIT_FAILURE);
 	}
 
-	// send string
-	if(sendto(sockfd, argv[3], strlen(argv[3]), 0
-				,  (struct sockaddr *) &dest, addrlen) == -1)
+	// reception de la chaine de caracteres
+	if(recvfrom(sockfd, buf, 1024, 0
+				, (struct sockaddr *) &client, &addrlen) == -1)
 	{
-		perror("sendto");
+		perror("recvfrom");
 		close(sockfd);
 		exit(EXIT_FAILURE);
 	}
+
+	// print the received char
+	printf("%s", buf);
 
 	// close the socket
 	close(sockfd);
