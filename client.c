@@ -37,14 +37,18 @@
 #include "server.h"
 #include "client.h"
 
-unsigned short int addToBuff(char *bufCursor,char *s,unsigned short int length,unsigned short int cursor)
+
+char *serializeChar(char *buffer,unsigned char value)
 {
-  for (unsigned short int i= 0; i < length; i++)
-  {
-    bufCursor[cursor+i] = s[i];
-  }
-  cursor = cursor + length+1;
-  return cursor;
+  buffer[0] = value;
+  return buffer+1;
+}
+
+char *serializeInt(char *buffer, unsigned int value)
+{
+  buffer[0] = value >> 8;
+  buffer[1] = value;
+  return buffer+2;
 }
 
 
@@ -60,6 +64,24 @@ int main(int argc, char **argv)
         printf("USAGE: %s IP PORT COMMANDE HASH [IP]\n", argv[0]);
         exit(-1);
     }
+
+    //declare and initialize the struct message
+    message *s;
+    s = malloc(sizeof(message));
+
+    if(strcmp(argv[3],"get")==0)
+    {
+      s->type=0;
+    }
+    else if(strcmp(argv[3],"put")==0)
+    {
+      s->type=1;
+    }
+
+  //get the length of the hash and store it in the structure
+  unsigned int lt = (unsigned) strlen(argv[4]);
+  unsigned char c = lt & 0xFF;
+  printf("%d\n", lt);
 
 	// socket factory
 	if((sockfd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)) == -1)
@@ -82,13 +104,7 @@ int main(int argc, char **argv)
 	}
 
   //prepare buffer
-  char buf[1024];
-  unsigned short int cursor=0;
-
-  cursor = addToBuff(buf,argv[3],3,cursor);
-  printf("%s\n",buf );
-  cursor = addToBuff(buf,argv[4],(unsigned)strlen(argv[4]),cursor);
-  printf("%s\n",buf );
+  char buf[1024]= "";
 
 	// send string
 	if(sendto(sockfd, argv[3], strlen(argv[3]), 0
