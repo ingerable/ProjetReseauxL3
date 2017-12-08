@@ -92,6 +92,15 @@ void serializeMessage(message *m,buffer *b)
   {
     serializeChar(b,m->hash[i]);
   }
+
+  //if the message is PUT type, then add the ip to the buffer
+  if(m->type==1)
+  {
+    for (unsigned int k = 0; k < 128; k++)
+    {
+      serializeChar(b,m->ip[k]);
+    }
+  }
 }
 
 //unserialize the whole message struct
@@ -107,6 +116,7 @@ message *unserializeMessage(buffer *b)
   printf("Next byte of the buffer: %d\n",b->next );
   printf("Length of the hash: %u\n",m->length );
 
+  //deserialize the hash
   unsigned int endOfhash = (b->next)+(m->length);
   int l=0;
   for (unsigned short i = b->next; i < endOfhash; i++)
@@ -115,5 +125,15 @@ message *unserializeMessage(buffer *b)
     l++;
   }
 
+  //if the message is PUT type, then deserialize the ip
+  l=0;
+  if(m->type==1)
+  {
+    for (unsigned int k = b->next; k < 128; k++)
+    {
+      m->ip[l]=unserializeChar(b);
+      l++;
+    }
+  }
   return m;
 }

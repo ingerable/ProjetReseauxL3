@@ -44,7 +44,7 @@ int main(int argc, char **argv)
     struct sockaddr_in6 dest;
 
     // check the number of args on command line
-	if(argc != 5)
+	if(argc > 6)
     {
         printf("USAGE: %s IP PORT COMMANDE HASH [IP]\n", argv[0]);
         exit(-1);
@@ -53,6 +53,7 @@ int main(int argc, char **argv)
     //declare and initialize the struct message
     struct message* ps = malloc(sizeof(message));
 
+    //add the type to our message
     if(strcmp(argv[3],"get")==0)
     {
       ps->type=0;
@@ -60,6 +61,8 @@ int main(int argc, char **argv)
     else if(strcmp(argv[3],"put")==0)
     {
       ps->type=1;
+      //add the ip to our struct message
+      strcpy((char *) ps->ip,argv[5]);
     }
 
 	// socket factory
@@ -82,10 +85,12 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-  //prepare buffer
+  //add hash to message struct
   strcpy((char *) ps->hash,argv[4]);
 
+  //add the length of the hash to our struct message
   ps->length= (unsigned short) strlen(argv[4]);
+
 
   //creation of the buffer
   buffer *b = new_buffer();

@@ -49,7 +49,7 @@ int main(int argc, char **argv)
 	struct sockaddr_in6 client;
 
 	// check the number of args on command line
-	if(argc != 3)
+	if(argc > 5)
 	{
 		printf("Usage: %s IP port\n", argv[0]);
 		exit(-1);
@@ -80,6 +80,9 @@ int main(int argc, char **argv)
 
 	//buffer initialization
 	buffer *b = new_buffer();
+
+	//hash table initialization
+
 	// reception de la chaine de caracteres
 	if(recvfrom(sockfd, b->data, 1024*sizeof(char), 0
 				, (struct sockaddr *) &client, &addrlen) == -1)
@@ -89,20 +92,24 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	/*unsigned char * tmp = b->data;
-	for (size_t i = 0; i < 50; i++) {
-		printf("%u",tmp[i] );
-	}*/
-
 	//recover a message struct from the buffer
 	struct message* ps = malloc(sizeof(message));
 	ps = unserializeMessage(b);
+
 	/*
-	*print the hash @test
+	*@test print the hash
 	*/
 	unsigned char * tmp = ps->hash;
-	for (size_t i = 0; i < 50; i++) {
+	for (size_t i = 0; i < ps->length; i++) {
 		printf("%c",(char)tmp[i] );
+	}
+	printf("\n");
+	/*
+	*@test print the ip
+	*/
+	unsigned char * tmp2 = ps->ip;
+	for (size_t l = 0; l < 128; l++) {
+		printf("%c",(char)tmp2[l] );
 	}
 
 	// close the socket

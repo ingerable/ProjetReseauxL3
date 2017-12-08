@@ -2,6 +2,7 @@ typedef struct message{
   char type;
   unsigned short length;
   unsigned char hash[1000];
+  unsigned char ip[128];
 }message;
 
 typedef struct buffer{

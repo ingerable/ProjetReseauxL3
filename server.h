@@ -1,9 +1,9 @@
-#define hashSize 130
+#define hashSize 1000
 #define ipSize 128
 #define hashTableSize 100
 #define bufferSize 1024
 
 struct hash{
-  char *hash[hashSize];
-  char *IP[ipSize];
+  unsigned char *hash[hashSize];
+  unsigned char *IP[ipSize];
 };
