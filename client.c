@@ -34,23 +34,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-#include "server.h"
 #include "client.h"
-
-
-char *serializeChar(char *buffer,unsigned char value)
-{
-  buffer[0] = value;
-  return buffer+1;
-}
-
-char *serializeInt(char *buffer, unsigned int value)
-{
-  buffer[0] = value >> 8;
-  buffer[1] = value;
-  return buffer+2;
-}
-
+#include "dht.h"
 
 int main(int argc, char **argv)
 {
@@ -66,22 +51,17 @@ int main(int argc, char **argv)
     }
 
     //declare and initialize the struct message
-    message *s;
-    s = malloc(sizeof(message));
+    struct message* ps = malloc(sizeof(message));
 
     if(strcmp(argv[3],"get")==0)
     {
-      s->type=0;
+      ps->type=0;
     }
     else if(strcmp(argv[3],"put")==0)
     {
-      s->type=1;
+      ps->type=1;
     }
 
-  //get the length of the hash and store it in the structure
-  unsigned int lt = (unsigned) strlen(argv[4]);
-  unsigned char c = lt & 0xFF;
-  printf("%d\n", lt);
 
 	// socket factory
 	if((sockfd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)) == -1)
@@ -90,7 +70,7 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	// init remote addr structure and other params
+  // init remote addr structure and other params
 	dest.sin6_family = AF_INET6;
 	dest.sin6_port   = htons(atoi(argv[2]));
 	addrlen         = sizeof(struct sockaddr_in6);
@@ -104,32 +84,29 @@ int main(int argc, char **argv)
 	}
 
   //prepare buffer
-  char buf[1024]= "";
+  strcpy((char *) ps->hash,argv[4]);
+  ps->length= (unsigned short) strlen(argv[4]);
+  ps->length = 200; //test
 
-	// send string
-	if(sendto(sockfd, argv[3], strlen(argv[3]), 0
-				,  (struct sockaddr *) &dest, addrlen) == -1)
-	{
-		perror("sendto");
-		close(sockfd);
-		exit(EXIT_FAILURE);
-	}
+
+  //creation of the buffer
+  buffer *b = new_buffer();
+
+  //serializeMessage
+  serializeMessage(ps,b);
+
+
+  // send string
+  	if(sendto(sockfd, b->data, strlen(argv[3]), 0
+  				,  (struct sockaddr *) &dest, addrlen) == -1)
+  	{
+  		perror("sendto");
+  		close(sockfd);
+  		exit(EXIT_FAILURE);
+  	}
 
 	// close the socket
 	close(sockfd);
 
 	return 0;
-}
-
-char *addField(char *buf, const char *field)
-{
-    while(*field!='\0')
-    {
-      buf++;
-      *buf = *field;
-      field++;
-    }
-    *buf='\0';
-    buf++;
-    return buf;
 }

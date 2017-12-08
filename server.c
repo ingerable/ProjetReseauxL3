@@ -26,6 +26,7 @@
  */
 
 #include "server.h"
+#include "dht.h"
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -42,7 +43,6 @@
 int main(int argc, char **argv)
 {
 	int sockfd;
-	char buf[1024];
 	socklen_t addrlen;
 
 	struct sockaddr_in6 my_addr;
@@ -64,12 +64,11 @@ int main(int argc, char **argv)
 
 
 	// init local addr structure and other params
-	inet_pton(AF_INET6, argv[1], &(my_addr.sin6_addr));
+		inet_pton(AF_INET6, argv[1], &(my_addr.sin6_addr));
 	my_addr.sin6_family      = AF_INET6;
 	my_addr.sin6_port        = htons(atoi(argv[2]));
 	my_addr.sin6_addr 		= in6addr_any;
 	addrlen                 = sizeof(struct sockaddr_in6);
-	memset(buf,'\0',1024);
 
 	// bind addr structure with socket
 	if(bind(sockfd, (struct sockaddr *) &my_addr, addrlen) == -1)
@@ -79,8 +78,11 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
+	//buffer initialization
+	unsigned char *buffer = malloc(1024*sizeof(unsigned char));
+
 	// reception de la chaine de caracteres
-	if(recvfrom(sockfd, buf, 1024, 0
+	if(recvfrom(sockfd, buffer, 1024, 0
 				, (struct sockaddr *) &client, &addrlen) == -1)
 	{
 		perror("recvfrom");
@@ -88,8 +90,9 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
+	
 	// print the received char
-	printf("%s", buf);
+	//printf("%s", buf);
 
 	// close the socket
 	close(sockfd);
