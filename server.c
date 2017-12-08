@@ -79,10 +79,9 @@ int main(int argc, char **argv)
 	}
 
 	//buffer initialization
-	unsigned char *buffer = malloc(1024*sizeof(unsigned char));
-
+	buffer *b = new_buffer();
 	// reception de la chaine de caracteres
-	if(recvfrom(sockfd, buffer, 1024, 0
+	if(recvfrom(sockfd, b->data, 1024*sizeof(char), 0
 				, (struct sockaddr *) &client, &addrlen) == -1)
 	{
 		perror("recvfrom");
@@ -90,9 +89,21 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	
-	// print the received char
-	//printf("%s", buf);
+	/*unsigned char * tmp = b->data;
+	for (size_t i = 0; i < 50; i++) {
+		printf("%u",tmp[i] );
+	}*/
+
+	//recover a message struct from the buffer
+	struct message* ps = malloc(sizeof(message));
+	ps = unserializeMessage(b);
+	/*
+	*print the hash @test
+	*/
+	unsigned char * tmp = ps->hash;
+	for (size_t i = 0; i < 50; i++) {
+		printf("%c",(char)tmp[i] );
+	}
 
 	// close the socket
 	close(sockfd);

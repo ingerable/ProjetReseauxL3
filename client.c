@@ -62,7 +62,6 @@ int main(int argc, char **argv)
       ps->type=1;
     }
 
-
 	// socket factory
 	if((sockfd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)) == -1)
 	{
@@ -85,9 +84,8 @@ int main(int argc, char **argv)
 
   //prepare buffer
   strcpy((char *) ps->hash,argv[4]);
-  ps->length= (unsigned short) strlen(argv[4]);
-  ps->length = 200; //test
 
+  ps->length= (unsigned short) strlen(argv[4]);
 
   //creation of the buffer
   buffer *b = new_buffer();
@@ -95,9 +93,9 @@ int main(int argc, char **argv)
   //serializeMessage
   serializeMessage(ps,b);
 
-
   // send string
-  	if(sendto(sockfd, b->data, strlen(argv[3]), 0
+
+  	if(sendto(sockfd, b->data, 1024*sizeof(char), 0
   				,  (struct sockaddr *) &dest, addrlen) == -1)
   	{
   		perror("sendto");

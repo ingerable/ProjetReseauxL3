@@ -43,23 +43,40 @@ void serializeChar(buffer *b,unsigned char value)
 //serialize a short
 void serializeShort(buffer *b,unsigned short value)
 {
-  value = htons(value);
+  //split the short in 2 char
+  unsigned char start = value;
+  unsigned char end = value >> 8;
   allocate_space(b,sizeof(unsigned short));
-  memcpy(((unsigned char *)b->data)+b->next, &value, sizeof(short));
-  b->next += sizeof(short);
+  printf("Client: start: %u and end: %u\n",start,end);
+  //add the firs char
+  memcpy(((unsigned char *)b->data)+b->next, &start, sizeof(unsigned char));
+  b->next += sizeof(unsigned char);
+
+  //and then the second
+  memcpy(((unsigned char *)b->data)+b->next, &end, sizeof(unsigned char));
+  b->next += sizeof(unsigned char);
 }
 
 //unserialize a char
-unsigned char unserializeChar()
+unsigned char unserializeChar(buffer *b)
 {
-  char c ='c';
+  unsigned char c = b->data[b->next];
+  b->next += sizeof(char);
   return c;
 }
 
 //unserialize a short
-unsigned short unserializeShort()
+unsigned short unserializeShort(buffer *b)
 {
-  short s = 235;
+  printf("%d\n",b->next );
+  //retrieve the 2 char of the short
+  unsigned char start = b->data[b->next];
+  unsigned char end = b->data[(b->next)+1];
+
+  printf("Server: start: %u and end: %u\n",start,end);
+  //shift the second char from 8 bits and do a OR operation to retrieve the whole short
+  unsigned short s = (end << 8) | start;
+  b->next += sizeof(unsigned short);
   return s;
 }
 
@@ -75,4 +92,28 @@ void serializeMessage(message *m,buffer *b)
   {
     serializeChar(b,m->hash[i]);
   }
+}
+
+//unserialize the whole message struct
+message *unserializeMessage(buffer *b)
+{
+  struct message* m = malloc(sizeof(message));
+  //type of the message
+  m->type=unserializeChar(b);
+  //length of the hash
+  m->length=unserializeShort(b);
+  //the hash itself
+
+  printf("Next byte of the buffer: %d\n",b->next );
+  printf("Length of the hash: %u\n",m->length );
+
+  unsigned int endOfhash = (b->next)+(m->length);
+  int l=0;
+  for (unsigned short i = b->next; i < endOfhash; i++)
+  {
+    m->hash[l]=unserializeChar(b);
+    l++;
+  }
+
+  return m;
 }

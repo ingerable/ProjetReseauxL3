@@ -11,9 +11,10 @@ typedef struct buffer{
 }buffer;
 
 struct buffer *new_buffer();
+message *unserializeMessage(buffer *b);
 void allocate_space(buffer *b, unsigned int size);
 void serializeChar(buffer *b,unsigned char value);
 void serializeShort(buffer *b,unsigned short value);
-unsigned char unserializeChar();
-unsigned short unserializeShort();
+unsigned char unserializeChar(buffer *b);
+unsigned short unserializeShort(buffer *b);
 void serializeMessage(message *m,buffer *b);
