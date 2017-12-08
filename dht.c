@@ -137,3 +137,36 @@ message *unserializeMessage(buffer *b)
   }
   return m;
 }
+
+//////////// server //////////////////
+
+
+//count the number of occurences for one hash in the hashtable
+unsigned short numberOfIp(unsigned char *hash, struct hash h[])
+{
+  unsigned short occurences = 0;
+  for (size_t i = 0; i < hashTableSize; i++)
+  {
+    if(strcmp((char*)hash,(char*)h[i].hash)==0)
+    {
+      occurences++;
+    }
+  }
+  return occurences;
+}
+
+//return all the occurences for one hash in an char[occurences]
+unsigned char *ipsForHash(unsigned char *hash, struct hash h[],unsigned short occurences)
+{
+  unsigned char *oc = malloc(occurences*sizeof(char)*ipSize);
+
+  for (size_t i = 0; i < hashTableSize; i++)
+  {
+    if(strcmp((char*)hash,(char*)h[i].hash)==0)
+    {
+      memcpy(oc,h[i].hash,ipSize);
+      printf("%s\n",oc);
+    }
+  }
+  return oc;
+}
