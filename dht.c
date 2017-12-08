@@ -47,7 +47,7 @@ void serializeShort(buffer *b,unsigned short value)
   unsigned char start = value;
   unsigned char end = value >> 8;
   allocate_space(b,sizeof(unsigned short));
-  printf("Client: start: %u and end: %u\n",start,end);
+
   //add the firs char
   memcpy(((unsigned char *)b->data)+b->next, &start, sizeof(unsigned char));
   b->next += sizeof(unsigned char);
@@ -68,12 +68,10 @@ unsigned char unserializeChar(buffer *b)
 //unserialize a short
 unsigned short unserializeShort(buffer *b)
 {
-  printf("%d\n",b->next );
   //retrieve the 2 char of the short
   unsigned char start = b->data[b->next];
   unsigned char end = b->data[(b->next)+1];
 
-  printf("Server: start: %u and end: %u\n",start,end);
   //shift the second char from 8 bits and do a OR operation to retrieve the whole short
   unsigned short s = (end << 8) | start;
   b->next += sizeof(unsigned short);
@@ -109,12 +107,9 @@ message *unserializeMessage(buffer *b)
   struct message* m = malloc(sizeof(message));
   //type of the message
   m->type=unserializeChar(b);
+
   //length of the hash
   m->length=unserializeShort(b);
-  //the hash itself
-
-  printf("Next byte of the buffer: %d\n",b->next );
-  printf("Length of the hash: %u\n",m->length );
 
   //deserialize the hash
   unsigned int endOfhash = (b->next)+(m->length);
@@ -136,6 +131,24 @@ message *unserializeMessage(buffer *b)
     }
   }
   return m;
+}
+
+//////////// client //////////////////
+
+//print an occurences number of ipv6
+void printIP6(unsigned char *ips, unsigned short occurences,unsigned char *hash)
+{
+  int k=0;
+  printf("IP disponibles pour le hash %s\n",hash);
+  for (size_t l = 0; l < occurences; l++)
+  {
+    for (size_t i = 0; i < ipSize; i++)
+    {
+      printf("%c",ips[i+k]);
+    }
+    k+=ipSize;
+    printf("\n");
+  }
 }
 
 //////////// server //////////////////
@@ -164,8 +177,8 @@ unsigned char *ipsForHash(unsigned char *hash, struct hash h[],unsigned short oc
   {
     if(strcmp((char*)hash,(char*)h[i].hash)==0)
     {
-      memcpy(oc,h[i].hash,ipSize);
-      printf("%s\n",oc);
+      //copy the ip to the 0+0*128 position and then 0+1*128 position, 0+2*128 ...(every 128 bytes)
+      strcpy(((char*)oc+(i*ipSize)),(char*)h[i].ip);
     }
   }
   return oc;

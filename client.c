@@ -99,7 +99,6 @@ int main(int argc, char **argv)
   serializeMessage(ps,b);
 
   // send string
-
   	if(sendto(sockfd, b->data, 1024*sizeof(char), 0
   				,  (struct sockaddr *) &dest, addrlen) == -1)
   	{
@@ -107,6 +106,40 @@ int main(int argc, char **argv)
   		close(sockfd);
   		exit(EXIT_FAILURE);
   	}
+
+    //get type, so the client is waiting for a response
+    if(ps->type==0)
+    {
+      // client is waiting for the socket that tells the number of ip incoming
+      unsigned short nbrOccurences;
+      if(recvfrom(sockfd, &nbrOccurences, sizeof(unsigned short), 0
+            , (struct sockaddr *) &dest, &addrlen) == -1)
+      {
+        perror("recvfrom");
+        close(sockfd);
+        exit(EXIT_FAILURE);
+      }
+
+      //now we will receive all the ip we requested for the hash
+      unsigned char *ips=malloc(sizeof(char)*ipSize*nbrOccurences);
+      if(recvfrom(sockfd, ips, sizeof(char)*ipSize*nbrOccurences, 0
+            , (struct sockaddr *) &dest, &addrlen) == -1)
+      {
+        perror("recvfrom");
+        close(sockfd);
+        exit(EXIT_FAILURE);
+      }
+
+      /*
+      * Print all the matching IP for the requested hash
+      */
+      printIP6(ips, nbrOccurences,ps->hash);
+
+    }
+
+    //free the memory
+		free(b);
+		free(ps);
 
 	// close the socket
 	close(sockfd);

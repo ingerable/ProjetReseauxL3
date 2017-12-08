@@ -32,6 +32,10 @@ unsigned short unserializeShort(buffer *b);
 void serializeMessage(message *m,buffer *b);
 
 
+/////////////////// client /////////////
+void printIP6(unsigned char *ips, unsigned short occurences,unsigned char *hash);
+
+
 //////////// server //////////////////
 
 //get request related function

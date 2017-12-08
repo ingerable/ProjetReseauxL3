@@ -56,31 +56,30 @@ int main(int argc, char **argv)
 	//position next to the last insert hash in the hashtable
 	int hashCursor = 0;
 
+	// socket factory
+	if((sockfd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+	{
+		perror("socket");
+		exit(EXIT_FAILURE);
+	}
+
+	// init local addr structure and other params
+		inet_pton(AF_INET6, argv[1], &(my_addr.sin6_addr));
+	my_addr.sin6_family      = AF_INET6;
+	my_addr.sin6_port        = htons(atoi(argv[2]));
+	my_addr.sin6_addr 		= in6addr_any;
+	addrlen                 = sizeof(struct sockaddr_in6);
+
+	// bind addr structure with socket
+	if(bind(sockfd, (struct sockaddr *) &my_addr, addrlen) == -1)
+	{
+		perror("bind");
+		close(sockfd);
+		exit(EXIT_FAILURE);
+	}
+
 	while(1)
 	{
-		// socket factory
-		if((sockfd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)) == -1)
-		{
-			perror("socket");
-			exit(EXIT_FAILURE);
-		}
-
-
-		// init local addr structure and other params
-			inet_pton(AF_INET6, argv[1], &(my_addr.sin6_addr));
-		my_addr.sin6_family      = AF_INET6;
-		my_addr.sin6_port        = htons(atoi(argv[2]));
-		my_addr.sin6_addr 		= in6addr_any;
-		addrlen                 = sizeof(struct sockaddr_in6);
-
-		// bind addr structure with socket
-		if(bind(sockfd, (struct sockaddr *) &my_addr, addrlen) == -1)
-		{
-			perror("bind");
-			close(sockfd);
-			exit(EXIT_FAILURE);
-		}
-
 		//buffer initialization
 		buffer *b = new_buffer();
 
@@ -96,21 +95,48 @@ int main(int argc, char **argv)
 			exit(EXIT_FAILURE);
 		}
 
-		//recover a message struct from the buffer
+		//first get the type of the message
+		unsigned char type = (b->data)[0];
+
+		//initialize struct message
 		struct message* ps = malloc(sizeof(message));
-		ps = unserializeMessage(b);
+
 
 		//chech the type of the message//
-		if(ps->type==0)// get request
+		if(type==0)// get request
 		{
-			printf("number of occurences %d\n",numberOfIp(ps->hash, hashTable));
+			//deserialize buffer to message
+			ps = unserializeMessage(b);
 
-			// envoyer la première socket pour dire combien d'adresse ip vont arriver
+			//values that will be send
+			unsigned short s= numberOfIp(ps->hash, hashTable);
+			unsigned char *ips = malloc(sizeof(char)*s*ipSize);
+			ips = ipsForHash(ps->hash, hashTable,s);
 
-			//les envoyer
+			// send the first message to tells how much ips there will be in the packet
+		  if(sendto(sockfd, &s, sizeof(short), 0
+		  			,  (struct sockaddr *) &client, addrlen) == -1)
+		  {
+		  	perror("sendto");
+		  	close(sockfd);
+		  	exit(EXIT_FAILURE);
+		  }
+
+			sleep(2);
+			//send the second message with all the ips
+			if(sendto(sockfd, ips, sizeof(char)*ipSize*s, 0
+		  			,  (struct sockaddr *) &client, addrlen) == -1)
+		  {
+		  	perror("sendto");
+		  	close(sockfd);
+		  	exit(EXIT_FAILURE);
+		  }
 		}
-		else if(ps->type==1) // put request
+		else if(type==1) // put request
 		{
+			//deserialize buffer to message
+			ps = unserializeMessage(b);
+
 			struct hash *h = malloc(sizeof(hash));
 			//add the hash from message to our hash struct
 			memcpy(h->hash,ps->hash,hashSize);
@@ -128,11 +154,11 @@ int main(int argc, char **argv)
 			printf("%s\n","unknow message type");
 		}
 
-
+		free(b);
+		free(ps);
 		// close the socket
-		close(sockfd);
+		//close(sockfd);
 	}
-
 
 	return 0;
 }
