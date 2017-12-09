@@ -133,6 +133,42 @@ message *unserializeMessage(buffer *b)
   return m;
 }
 
+void sendTo(unsigned short port, char *ip,unsigned char *buffer, unsigned int sizeBuffer)
+{
+  //initialize socket connection
+  int sockfd;
+  socklen_t addrlen;
+  struct sockaddr_in6 dest;
+
+  // socket factory
+  if((sockfd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+  {
+    perror("socket");
+    exit(EXIT_FAILURE);
+  }
+
+  // init remote addr structure and other params
+  dest.sin6_family = AF_INET6;
+  dest.sin6_port   = htons(port);
+  addrlen         = sizeof(struct sockaddr_in6);
+
+  // get addr from command line and convert it
+  if(inet_pton(AF_INET6, ip, &dest.sin6_addr) != 1)
+  {
+    perror("inet_pton");
+    close(sockfd);
+    exit(EXIT_FAILURE);
+  }
+
+  if(sendto(sockfd, buffer, sizeBuffer, 0
+        ,  (struct sockaddr *) &dest, addrlen) == -1)
+  {
+    perror("sendto");
+    close(sockfd);
+    exit(EXIT_FAILURE);
+  }
+}
+
 //////////// client //////////////////
 
 //print an occurences number of ipv6

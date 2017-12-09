@@ -27,7 +27,7 @@ PROGS = client server
 all: $(PROGS)
 
 
-$(PROGS): dht.o
+$(PROGS): dht.o -lpthread 
 
 musee.o: dht.h
 
