@@ -98,23 +98,22 @@ void *serverRequest(void *s)
 			newServ->port = (unsigned short)atoi(port);
 			memcpy((char*)newServ->ip,&ip,ipSize);
 			serverTable[serverCursor] = *newServ;
+			serverCursor++;
 			printf("Server with ip: %s and port %u added\n",newServ->ip,newServ->port);
 		}
 		else if(strcmp(command,"disconnect")==0)
 		{
 			//input for the connection to the server
-			char ip[128];
-			char port[16];
-			printf("%s\n","Enter the ip of the server you want to disconnect");
-			scanf("%s",ip);
-			printf("%s\n","And the port");
-			scanf("%s",port);
-
-			buffer *b = new_buffer();
-			serializeChar(b,3);
-			serializeShort(b,myS->port);
-			sendTo((unsigned short)atoi(port),ip,(unsigned char*)b->data,sizeof(unsigned char)+sizeof(unsigned short));
-			free(b);
+			for (size_t i = 0; i < serverCursor; i++)
+			{
+				buffer *b = new_buffer();
+				serializeChar(b,3);
+				serializeShort(b,myS->port);
+				printf("%u\n",serverTable[i].port);
+				printf("%s\n",(char *)serverTable[i].ip );
+				sendTo(serverTable[i].port,(char *)serverTable[i].ip,(unsigned char*)b->data,sizeof(unsigned char)+sizeof(unsigned short));
+				free(b);
+			}
 			exit(1);
 		}
 	}
@@ -280,7 +279,7 @@ int main(int argc, char **argv)
 			serverTable[serverCursor]=*s;
 			serverCursor++;
 		}
-		else if(type==3)
+		else if(type==3)//a server want to disconnect
 		{
 			struct server *s = malloc(sizeof(server));
 
@@ -297,13 +296,8 @@ int main(int argc, char **argv)
 			s->port=port;
 
 			//delete the server
-			for (size_t i = 0; i < serverTableSize; i++)
-			{
-				if(strcmp((char*)serverTable[i].ip,(char*)s->ip)==0 && serverTable[i].port==s->port)
-				{
-					printf("server %s with port %u deleted\n",s->ip,s->port);
-				}
-			}
+			serverCursor = deleteServer(serverTable,serverCursor,s);
+
 		}
 		else
 		{

@@ -49,3 +49,6 @@ void printIP6(unsigned char *ips, unsigned short occurences,unsigned char *hash)
 //get request related function
 unsigned short numberOfIp(unsigned char *hash, struct hash h[]);
 unsigned char *ipsForHash(unsigned char *hash, struct hash h[],unsigned short occurences);
+
+//delete a server
+int deleteServer(struct server *serverTable, int cursor,struct server *s);

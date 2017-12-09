@@ -219,3 +219,40 @@ unsigned char *ipsForHash(unsigned char *hash, struct hash h[],unsigned short oc
   }
   return oc;
 }
+
+//delete a server in the server list
+int deleteServer(struct server *serverTable, int cursor,struct server *s)
+{
+  //index of the server in the list
+  int indexServer = 0;
+
+  //variables used to display the deleted server
+  unsigned short displayPort;
+  unsigned char ip[128];
+
+  for (int i = 0; i < serverTableSize; i++)
+  {
+    if(strcmp((char*)serverTable[i].ip,(char*)s->ip)==0 && serverTable[i].port==s->port)
+    {
+      indexServer= i; // now we know the index in the array
+      displayPort=serverTable[indexServer].port;
+      strcpy((char *) ip,(char *)serverTable[indexServer].ip);
+    }
+  }
+
+  //last inserted server i now at i-1
+  int last_index = cursor-1;
+
+  //now move all the next server in the list to the position n-1
+  if(cursor>0 && indexServer>1)
+  {
+    for (int i = indexServer; i < last_index; i++)
+    {
+      serverTable[i] = serverTable[i+1];
+      printf("server nbr %d %u\n",i,serverTable[i].port);
+    }
+  }
+  printf("server %s with port %u deleted\n",ip,displayPort);
+  return cursor--;
+
+}
