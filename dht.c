@@ -91,8 +91,8 @@ void serializeMessage(message *m,buffer *b)
     serializeChar(b,m->hash[i]);
   }
 
-  //if the message is PUT type, then add the ip to the buffer
-  if(m->type==1)
+  //if the message is PUT type or PUT SERVER, then add the ip to the buffer
+  if(m->type==1 || m->type==4)
   {
     for (unsigned int k = 0; k < 128; k++)
     {
@@ -122,7 +122,7 @@ message *unserializeMessage(buffer *b)
 
   //if the message is PUT type, then deserialize the ip
   l=0;
-  if(m->type==1)
+  if(m->type==1 || m->type==4)
   {
     for (unsigned int k = b->next; k < 128; k++)
     {
@@ -169,6 +169,8 @@ void sendTo(unsigned short port, char *ip,unsigned char *buffer, unsigned int si
   }
 }
 
+
+
 //////////// client //////////////////
 
 //print an occurences number of ipv6
@@ -191,10 +193,10 @@ void printIP6(unsigned char *ips, unsigned short occurences,unsigned char *hash)
 
 
 //count the number of occurences for one hash in the hashtable
-unsigned short numberOfIp(unsigned char *hash, struct hash h[])
+unsigned short numberOfIp(unsigned char *hash, struct hash h[],unsigned int *hashTableSize)
 {
   unsigned short occurences = 0;
-  for (size_t i = 0; i < hashTableSize; i++)
+  for (size_t i = 0; i < *hashTableSize; i++)
   {
     if(strcmp((char*)hash,(char*)h[i].hash)==0)
     {
@@ -205,11 +207,11 @@ unsigned short numberOfIp(unsigned char *hash, struct hash h[])
 }
 
 //return all the occurences for one hash in an char[occurences]
-unsigned char *ipsForHash(unsigned char *hash, struct hash h[],unsigned short occurences)
+unsigned char *ipsForHash(unsigned char *hash, struct hash h[],unsigned short occurences,unsigned int *hashTableSize)
 {
   unsigned char *oc = malloc(occurences*sizeof(char)*ipSize);
 
-  for (size_t i = 0; i < hashTableSize; i++)
+  for (size_t i = 0; i < *hashTableSize; i++)
   {
     if(strcmp((char*)hash,(char*)h[i].hash)==0)
     {
@@ -221,7 +223,7 @@ unsigned char *ipsForHash(unsigned char *hash, struct hash h[],unsigned short oc
 }
 
 //delete a server in the server list
-int deleteServer(struct server *serverTable, int cursor,struct server *s)
+void deleteServer(struct server *serverTable,unsigned int *serverCursor,struct server *s,unsigned int *size)
 {
   //index of the server in the list
   int indexServer = 0;
@@ -230,7 +232,7 @@ int deleteServer(struct server *serverTable, int cursor,struct server *s)
   unsigned short displayPort;
   unsigned char ip[128];
 
-  for (int i = 0; i < serverTableSize; i++)
+  for (unsigned int i = 0; i < *size; i++)
   {
     if(strcmp((char*)serverTable[i].ip,(char*)s->ip)==0 && serverTable[i].port==s->port)
     {
@@ -241,18 +243,60 @@ int deleteServer(struct server *serverTable, int cursor,struct server *s)
   }
 
   //last inserted server i now at i-1
-  int last_index = cursor-1;
+  int last_index = (*serverCursor)-1;
 
   //now move all the next server in the list to the position n-1
-  if(cursor>0 && indexServer>1)
+  if(*serverCursor>0 && indexServer>1)
   {
     for (int i = indexServer; i < last_index; i++)
     {
       serverTable[i] = serverTable[i+1];
-      printf("server nbr %d %u\n",i,serverTable[i].port);
     }
   }
   printf("server %s with port %u deleted\n",ip,displayPort);
-  return cursor--;
+  (*serverCursor)--;
+}
+
+//add a server to the server list
+void addServer(struct server *serverTable,unsigned int *serverCursor, struct server *s, unsigned int *size)
+{
+  //enough memory
+  if(*serverCursor<*size)
+  {
+    serverTable[*serverCursor] = *s;
+    printf("Server ip %s with port %u added\n",serverTable[*serverCursor].ip,serverTable[*serverCursor].port );
+    (*serverCursor)++;
+  }
+  else
+  {
+    serverTable = realloc(serverTable,(*size)*2*sizeof(struct server));
+    serverTable[*serverCursor] = *s;
+    *size = (*size)*2;
+    printf("Server ip %s with port %u added \n",serverTable[*serverCursor].ip,serverTable[*serverCursor].port );
+    (*serverCursor)++;
+  }
 
 }
+
+//add an hash to the hash table and check the memory allocation at the same time
+void addHash(struct hash *hashTable,unsigned int *hashCursor, struct hash *h, unsigned int *size)
+{
+  //enough memory
+  if(*hashCursor<*size)
+  {
+    hashTable[*hashCursor] = *h;
+    printf("hash %s associated with ip %s added\n",hashTable[*hashCursor].hash,hashTable[*hashCursor].ip);
+    (*hashCursor)++;
+  }
+  else//reallocate memory
+  {
+    hashTable = realloc(hashTable,(*size)*2*sizeof(hash));
+    hashTable[*hashCursor] = *h;
+    *size = (*size)*2;
+    printf("hash : %s associated with ip %s added\n",hashTable[*hashCursor].hash,hashTable[*hashCursor].ip);
+    (*hashCursor)++;
+  }
+
+}
+
+//delete an hash

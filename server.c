@@ -35,19 +35,26 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <sys/time.h>
 #include <pthread.h>
 
 //globals
-//hash table initialization
-struct hash hashTable[hashTableSize];
 
-//server table initialization
-struct server serverTable[serverTableSize];
-
-//position next to the last insert hash in the hashtable
+//hash table ,size,cursor
+struct hash *hashTable=NULL;
+unsigned int hashTableSize = 100;
 unsigned int hashCursor = 0;
-//same for the serverTable
+
+//server table
+struct server *serverTable=NULL;
+unsigned int serverTableSize = 100;
 unsigned int serverCursor = 0;
+
+
+//array of keepAliveThreads
+pthread_t *keepAliveThreads=NULL;
+unsigned int threadKeepAliveCursor = 0;
+
 
 //function assigned to a thread to execute command for the server
 void *serverRequest(void *s)
@@ -83,23 +90,24 @@ void *serverRequest(void *s)
 				//serializeMessage
 				buffer *b1 = new_buffer();
 				struct message* ps = malloc(sizeof(message));
-				ps->type=1;
+				ps->type=4;
 				strcpy((char *) ps->hash,(char *)hashTable[i].hash);
 				strcpy((char *) ps->ip,(char *)hashTable[i].ip);
 				ps->length = strlen((char *)hashTable[i].hash);
 
-			  serializeMessage(ps,b);
-				sendTo((unsigned short)atoi(port),ip,(unsigned char*)b->data,sizeof(unsigned short)+ipSize*sizeof(unsigned char)+sizeof(hash));
+			  serializeMessage(ps,b1);
+				sendTo((unsigned short)atoi(port),ip,(unsigned char*)b1->data,sizeof(char)+sizeof(unsigned short)+ipSize*sizeof(unsigned char)+sizeof(unsigned char)*ps->length);
 				free(b1);
 				free(ps);
 			}
+
 			//finally add this server to our list
 			struct server *newServ = malloc(sizeof(newServ));
 			newServ->port = (unsigned short)atoi(port);
 			memcpy((char*)newServ->ip,&ip,ipSize);
-			serverTable[serverCursor] = *newServ;
-			serverCursor++;
-			printf("Server with ip: %s and port %u added\n",newServ->ip,newServ->port);
+
+			//store the new server in our serverTable
+			addServer(serverTable,&serverCursor,newServ,&serverTableSize);
 		}
 		else if(strcmp(command,"disconnect")==0)
 		{
@@ -109,8 +117,6 @@ void *serverRequest(void *s)
 				buffer *b = new_buffer();
 				serializeChar(b,3);
 				serializeShort(b,myS->port);
-				printf("%u\n",serverTable[i].port);
-				printf("%s\n",(char *)serverTable[i].ip );
 				sendTo(serverTable[i].port,(char *)serverTable[i].ip,(unsigned char*)b->data,sizeof(unsigned char)+sizeof(unsigned short));
 				free(b);
 			}
@@ -118,6 +124,12 @@ void *serverRequest(void *s)
 		}
 	}
 
+	return 0;
+}
+
+//function assigned to a thread to check if the given server is still alive
+void *keepAlive()
+{
 	return 0;
 }
 
@@ -172,10 +184,16 @@ int main(int argc, char **argv)
 	 return EXIT_FAILURE;
 	}
 
+	//memory allocation
+	hashTable = malloc(sizeof(struct hash)*hashTableSize);
+	serverTable = malloc(sizeof(struct server)*serverTableSize);
+	keepAliveThreads = malloc(sizeof(pthread_t)*serverTableSize);
+
 	//position next to the last insert hash in the hashtable
 	hashCursor = 0;
 	//same for the serverTable
 	serverCursor = 0;
+
 
 	 /*
 	 *Server waiting on a socket
@@ -201,16 +219,16 @@ int main(int argc, char **argv)
 		struct message* ps = malloc(sizeof(message));
 
 
-		//chech the type of the message//
+		//check the type of the message//
 		if(type==0)// get request
 		{
 			//deserialize buffer to message
 			ps = unserializeMessage(b);
 
 			//values that will be send
-			unsigned short s= numberOfIp(ps->hash, hashTable);
+			unsigned short s= numberOfIp(ps->hash, hashTable,&hashTableSize);
 			unsigned char *ips = malloc(sizeof(char)*s*ipSize);
-			ips = ipsForHash(ps->hash, hashTable,s);
+			ips = ipsForHash(ps->hash, hashTable,s,&hashTableSize);
 
 			// send the first message to tells how much ips there will be in the packet
 		  if(sendto(sockfd, &s, sizeof(short), 0
@@ -245,18 +263,17 @@ int main(int argc, char **argv)
 			memcpy(h->ip,ps->ip,ipSize);
 
 			//add the hash to the hashtable
-			hashTable[hashCursor] = *h;
+			addHash(hashTable,&hashCursor,h,&hashTableSize);
 
-			//share the new hash with all the registered server
+			//share the new hash with all the registered server( but we have to change the type of the message first to PUT request from server)
+			ps->type=4;
+			buffer *b = new_buffer();
+			serializeMessage(ps,b);
 
 			for (size_t i = 0; i < serverCursor; i++)
 			{
 				sendTo(serverTable[i].port,(char*)serverTable[i].ip,(unsigned char*)b->data,sizeof(message));
 			}
-			//move the cursor to the next position
-			printf("hash : %s\n",hashTable[hashCursor].hash );
-			printf("ip : %s\n",hashTable[hashCursor].ip );
-			hashCursor++;
 		}
 		else if(type==2) //connect request
 		{
@@ -275,9 +292,8 @@ int main(int argc, char **argv)
 			s->port=port;
 
 			//store the new server in our serverTable
-			printf("Server with ip: %s and port %u added\n",s->ip,s->port);
-			serverTable[serverCursor]=*s;
-			serverCursor++;
+			addServer(serverTable,&serverCursor,s,&serverTableSize);
+
 		}
 		else if(type==3)//a server want to disconnect
 		{
@@ -296,8 +312,24 @@ int main(int argc, char **argv)
 			s->port=port;
 
 			//delete the server
-			serverCursor = deleteServer(serverTable,serverCursor,s);
+			deleteServer(serverTable,&serverCursor,s,&serverTableSize);
 
+		}
+		else if(type==4)//PUT request but from server (you can't treat it like a client PUT request, because there will be brodcast tempest)
+		{
+
+			//deserialize buffer to message
+			ps = unserializeMessage(b);
+			struct hash *h = malloc(sizeof(hash));
+
+			//add the hash from message to our hash struct
+			memcpy(h->hash,ps->hash,hashSize);
+
+			//add the ip
+			memcpy(h->ip,ps->ip,ipSize);
+
+			//add the hash to the hashtable
+			addHash(hashTable,&hashCursor,h,&hashTableSize);
 		}
 		else
 		{

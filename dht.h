@@ -1,7 +1,5 @@
 #define hashSize 1000
 #define ipSize 128
-#define hashTableSize 100
-#define serverTableSize 100
 
 typedef struct message{
   char type;
@@ -47,8 +45,12 @@ void printIP6(unsigned char *ips, unsigned short occurences,unsigned char *hash)
 //////////// server //////////////////
 
 //get request related function
-unsigned short numberOfIp(unsigned char *hash, struct hash h[]);
-unsigned char *ipsForHash(unsigned char *hash, struct hash h[],unsigned short occurences);
+unsigned short numberOfIp(unsigned char *hash, struct hash h[],unsigned int *hashTableSize);
+unsigned char *ipsForHash(unsigned char *hash, struct hash h[],unsigned short occurences,unsigned int *hashTableSize);
 
-//delete a server
-int deleteServer(struct server *serverTable, int cursor,struct server *s);
+//add and delete a server
+void addServer(struct server *serverTable,unsigned int *serverCursor, struct server *s, unsigned int *size);
+void deleteServer(struct server *serverTable,unsigned int *serverCursor,struct server *s,unsigned int *size);
+
+//add an hash
+void addHash(struct hash *hashTable,unsigned int *hashCursor, struct hash *h, unsigned int *size);
