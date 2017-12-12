@@ -251,7 +251,17 @@ int main(int argc, char **argv)
 	}
 
 	// init local addr structure and other params
-	inet_pton(AF_INET6, argv[1], &(my_addr.sin6_addr));
+	char ipNumber[128];
+	if(strcmp(argv[1],"localhost")==0)
+	{
+		memcpy((char*)ipNumber,(char*)"::1",ipSize);
+	}
+	else
+	{
+		memcpy((char*)ipNumber,(char*)argv[1],ipSize);
+	}
+	
+	inet_pton(AF_INET6, ipNumber, &(my_addr.sin6_addr));
 	my_addr.sin6_family      = AF_INET6;
 	my_addr.sin6_port        = htons(atoi(argv[2]));
 	my_addr.sin6_addr 		= in6addr_any;
@@ -273,7 +283,7 @@ int main(int argc, char **argv)
 
 	//arguments for the thread function
 	struct server *myServ =malloc(sizeof(server));
-	memcpy((char*)myServ->ip,(char*)argv[1],ipSize);
+	memcpy((char*)myServ->ip,(char*)ipNumber,ipSize);
 	myServ->port = (unsigned short) atoi(argv[2]);
 	global_myserv = myServ;
 

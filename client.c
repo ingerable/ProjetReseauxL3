@@ -78,12 +78,25 @@ int main(int argc, char **argv)
 	addrlen         = sizeof(struct sockaddr_in6);
 
 	// get addr from command line and convert it
-	if(inet_pton(AF_INET6, argv[1], &dest.sin6_addr) != 1)
-	{
-		perror("inet_pton");
-		close(sockfd);
-		exit(EXIT_FAILURE);
-	}
+  if(strcmp(argv[1],"localhost")==0)
+  {
+    if(inet_pton(AF_INET6, "::1", &dest.sin6_addr) != 1)
+  	{
+  		perror("inet_pton");
+  		close(sockfd);
+  		exit(EXIT_FAILURE);
+  	}
+  }
+  else
+  {
+    if(inet_pton(AF_INET6, argv[1], &dest.sin6_addr) != 1)
+  	{
+  		perror("inet_pton");
+  		close(sockfd);
+  		exit(EXIT_FAILURE);
+  	}
+  }
+
 
   //add hash to message struct
   strcpy((char *) ps->hash,argv[4]);
