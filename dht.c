@@ -346,3 +346,16 @@ void deleteHash(struct hash *hashTable,unsigned int *hashCursor, struct hash *h,
   printf("Hash deleted\n");
   (*hashCursor)--;
 }
+
+//search if hash h is in the hash table, return 0 if found else return 1
+int hashExist(struct hash *hashTable, struct hash *h, unsigned int *size)
+{
+  for (unsigned int i = 0; i < *size; i++)
+  {
+    if(strcmp((char*)hashTable[i].ip,(char*)h->ip)==0 && strcmp((char*)hashTable[i].hash,(char*)h->hash))
+    {
+      return 0;
+    }
+  }
+  return 1;
+}

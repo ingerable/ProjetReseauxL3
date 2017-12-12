@@ -63,3 +63,6 @@ void addHash(struct hash *hashTable,unsigned int *hashCursor, struct hash *h, un
 
 //delete an hash
 void deleteHash(struct hash *hashTable,unsigned int *hashCursor, struct hash *h, unsigned int *size);
+
+//search hash in table
+int hashExist(struct hash *hashTable, struct hash *h, unsigned int *size);
