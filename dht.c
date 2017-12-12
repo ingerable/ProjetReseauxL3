@@ -275,7 +275,20 @@ void addServer(struct server *serverTable,unsigned int *serverCursor, struct ser
     printf("Server ip %s with port %u added \n",serverTable[*serverCursor].ip,serverTable[*serverCursor].port );
     (*serverCursor)++;
   }
+  s=&(serverTable[*serverCursor-1]);
 
+}
+
+//advertise server thread we got an KeepAlive message from the binded server
+void adKeepAlive(struct server *serverTable,unsigned int *serverCursor,struct server *s)
+{
+  for (unsigned int i = 0; i < *serverCursor; i++)
+  {
+    if(strcmp((char*)serverTable[i].ip,(char*)s->ip)==0 && serverTable[i].port==s->port)
+    {
+      serverTable[i].ka=1;//Notify the thread with a tiny data
+    }
+  }
 }
 
 //add an hash to the hash table and check the memory allocation at the same time

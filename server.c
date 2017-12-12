@@ -50,11 +50,61 @@ struct server *serverTable=NULL;
 unsigned int serverTableSize = 100;
 unsigned int serverCursor = 0;
 
+//my server
+struct server *global_myserv = NULL;
 
-//array of keepAliveThreads
-pthread_t *keepAliveThreads=NULL;
-unsigned int threadKeepAliveCursor = 0;
 
+//wait for main thread to give it ka notification meanwhile timing out
+void *keepAliveReceiver(void *s)
+{
+  struct server *bindedServ = (struct server*)s;
+  unsigned int time=0;
+  while(time<timeout)
+  {
+		printf("Ka value = %d\n",bindedServ->ka);
+    if(bindedServ->ka==1)
+    {
+			printf("Keep alive notification, restart timer...\n");
+      bindedServ->ka=0;//reinit of the notification
+      time=0;
+    }
+    else
+    {
+      sleep(1);
+      time++;
+    }
+  }
+	//delete the server
+	deleteServer(serverTable,&serverCursor,bindedServ,&serverTableSize);
+	printf("Server %s connection timed out\n", bindedServ->ip);
+	return 0;
+}
+
+//send ka message to the binded server
+void *keepAliveSender(void *s)
+{
+	struct server *bindedServ = s;
+	unsigned int time=0;
+	while(bindedServ!=NULL)
+	{
+		if(time==5)
+		{
+			time=0;
+			buffer *b = new_buffer();
+			serializeChar(b,5);
+			serializeShort(b,bindedServ->port);
+			//send keep alive message
+			sendTo((unsigned short)global_myserv->port,(char*)bindedServ->ip,(unsigned char*)b->data,sizeof(unsigned char)+sizeof(unsigned short));
+			free(b);
+		}
+		else
+		{
+			sleep(1);
+			time++;
+		}
+	}
+	return 0;
+}
 
 //function assigned to a thread to execute command for the server
 void *serverRequest(void *s)
@@ -108,6 +158,27 @@ void *serverRequest(void *s)
 
 			//store the new server in our serverTable
 			addServer(serverTable,&serverCursor,newServ,&serverTableSize);
+
+			/*
+			start the keep alive engine
+			*/
+			//thread creation
+			pthread_t keep_aliveR;
+			pthread_t keep_aliveS;
+
+			//thread keep alive receiver
+			if(pthread_create(&keep_aliveR, NULL, keepAliveReceiver, newServ) == -1)
+			{
+			 perror("pthread_create");
+			 //return EXIT_FAILURE;
+			}
+
+			//thread keep alive sender
+			if(pthread_create(&keep_aliveS, NULL, keepAliveSender, newServ) == -1)
+			{
+			 perror("pthread_create");
+			 //return EXIT_FAILURE;
+			}
 		}
 		else if(strcmp(command,"disconnect")==0)
 		{
@@ -124,12 +195,6 @@ void *serverRequest(void *s)
 		}
 	}
 
-	return 0;
-}
-
-//function assigned to a thread to check if the given server is still alive
-void *keepAlive()
-{
 	return 0;
 }
 
@@ -177,6 +242,7 @@ int main(int argc, char **argv)
 	struct server *myServ =malloc(sizeof(server));
 	memcpy((char*)myServ->ip,(char*)argv[1],ipSize);
 	myServ->port = (unsigned short) atoi(argv[2]);
+	global_myserv = myServ;
 
 	if(pthread_create(&serv_thread, NULL, serverRequest, myServ) == -1)
 	{
@@ -187,7 +253,6 @@ int main(int argc, char **argv)
 	//memory allocation
 	hashTable = malloc(sizeof(struct hash)*hashTableSize);
 	serverTable = malloc(sizeof(struct server)*serverTableSize);
-	keepAliveThreads = malloc(sizeof(pthread_t)*serverTableSize);
 
 	//position next to the last insert hash in the hashtable
 	hashCursor = 0;
@@ -290,9 +355,31 @@ int main(int argc, char **argv)
 			unsigned short port = unserializeShort(b);
 			memcpy((char*)s->ip,&str,ipSize);
 			s->port=port;
+			s->ka=0;
 
 			//store the new server in our serverTable
 			addServer(serverTable,&serverCursor,s,&serverTableSize);
+
+			/*
+			start the keep alive engine
+			*/
+			//thread creation
+			pthread_t keep_aliveR;
+			pthread_t keep_aliveS;
+
+			//thread keep alive receiver
+			if(pthread_create(&keep_aliveR, NULL, keepAliveReceiver, s) == -1)
+			{
+			 perror("pthread_create");
+			 return EXIT_FAILURE;
+			}
+
+			//thread keep alive sender
+			if(pthread_create(&keep_aliveS, NULL, keepAliveSender, s) == -1)
+			{
+			 perror("pthread_create");
+			 return EXIT_FAILURE;
+			}
 
 		}
 		else if(type==3)//a server want to disconnect
@@ -330,6 +417,27 @@ int main(int argc, char **argv)
 
 			//add the hash to the hashtable
 			addHash(hashTable,&hashCursor,h,&hashTableSize);
+		}
+		else if(type==5)//Keep alive from server
+		{
+			struct server *s = malloc(sizeof(server));
+
+			//get the ip adress
+			struct sockaddr_in6* pV6Addr = (struct sockaddr_in6*)&client;
+			struct in6_addr ipAddr = pV6Addr->sin6_addr;
+			char str[INET6_ADDRSTRLEN];
+			inet_ntop( AF_INET6, &ipAddr, str, INET6_ADDRSTRLEN );
+
+			//get the port
+			b->next++; //move the pointer to the port directly ( we don't care of the type of the message now)
+			unsigned short port = unserializeShort(b);
+			memcpy((char*)s->ip,&str,ipSize);
+			s->port=port;
+
+			printf("Keep alive message from %s ...\n",s->ip);
+
+			//keep alive advertisement for the binded server thread
+			adKeepAlive(serverTable,&serverCursor,s);
 		}
 		else
 		{

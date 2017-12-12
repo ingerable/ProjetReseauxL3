@@ -1,5 +1,6 @@
 #define hashSize 1000
 #define ipSize 128
+#define timeout 20
 
 typedef struct message{
   char type;
@@ -16,6 +17,7 @@ typedef struct hash{
 typedef struct server{
   unsigned char ip[ipSize];
   unsigned short port;
+  unsigned short ka;
 }server;
 
 typedef struct buffer{
@@ -51,6 +53,9 @@ unsigned char *ipsForHash(unsigned char *hash, struct hash h[],unsigned short oc
 //add and delete a server
 void addServer(struct server *serverTable,unsigned int *serverCursor, struct server *s, unsigned int *size);
 void deleteServer(struct server *serverTable,unsigned int *serverCursor,struct server *s,unsigned int *size);
+
+//keep alive (advertise server thread waiting for info)
+void adKeepAlive(struct server *serverTable,unsigned int *serverCursor,struct server *s);
 
 //add an hash
 void addHash(struct hash *hashTable,unsigned int *hashCursor, struct hash *h, unsigned int *size);
