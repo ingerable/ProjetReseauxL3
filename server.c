@@ -53,6 +53,30 @@ unsigned int serverCursor = 0;
 //my server
 struct server *global_myserv = NULL;
 
+//wait for main thread to give it uptodate notification meanwhile timing out
+void *obsoleteReceiver(void *h)
+{
+  struct hash *bindedHash = (struct hash*)h;
+  unsigned int time=0;
+  while(time<30)
+  {
+    if(bindedHash->uptodate==1)
+    {
+      printf("Up to date notification, restart timer...\n");
+      bindedHash->uptodate=0;//reinit of the notification
+      time=0;
+    }
+    else
+    {
+      sleep(1);
+      time++;
+    }
+  }
+  //delete hash
+  printf("Hash %s timed out\n",bindedHash->hash);
+  return 0;
+}
+
 
 //wait for main thread to give it ka notification meanwhile timing out
 void *keepAliveReceiver(void *s)
@@ -76,7 +100,7 @@ void *keepAliveReceiver(void *s)
 	//delete the server
 	deleteServer(serverTable,&serverCursor,bindedServ,&serverTableSize);
 	printf("Server %s connection timed out\n", bindedServ->ip);
-	bindedServ->ka=99;
+	bindedServ->ka=99;//notify sender that server is deleted from table
 	return 0;
 }
 
@@ -85,7 +109,7 @@ void *keepAliveSender(void *s)
 {
 	struct server *bindedServ = s;
 	unsigned int time=0;
-	while(bindedServ->ka!=99)
+	while(bindedServ->ka!=99)//while server is in table and connected
 	{
 		if(time==5)
 		{

@@ -12,6 +12,7 @@ typedef struct message{
 typedef struct hash{
   unsigned char hash[hashSize];
   unsigned char ip[ipSize];
+  unsigned short uptodate;
 }hash;
 
 typedef struct server{
