@@ -352,6 +352,9 @@ int main(int argc, char **argv)
 			//add the ip
 			memcpy(h->ip,ps->ip,ipSize);
 
+      //init the up to date data
+      h->uptodate=0;
+
 			//add the hash to the hashtable
 			addHash(hashTable,&hashCursor,h,&hashTableSize);
 

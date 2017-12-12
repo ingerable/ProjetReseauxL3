@@ -60,3 +60,6 @@ void adKeepAlive(struct server *serverTable,unsigned int *serverCursor,struct se
 
 //add an hash
 void addHash(struct hash *hashTable,unsigned int *hashCursor, struct hash *h, unsigned int *size);
+
+//delete an hash
+void deleteHash(struct hash *hashTable,unsigned int *hashCursor, struct hash *h, unsigned int *size);

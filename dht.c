@@ -230,7 +230,7 @@ void deleteServer(struct server *serverTable,unsigned int *serverCursor,struct s
 
   //variables used to display the deleted server
   unsigned short displayPort;
-  unsigned char ip[128];
+  unsigned char ip[ipSize];
 
   for (unsigned int i = 0; i < *size; i++)
   {
@@ -312,3 +312,37 @@ void addHash(struct hash *hashTable,unsigned int *hashCursor, struct hash *h, un
 }
 
 //delete an hash
+void deleteHash(struct hash *hashTable,unsigned int *hashCursor, struct hash *h, unsigned int *size)
+{
+  //index of the server in the list
+  int indexHash = 0;
+
+  //variables used to display the deleted hash
+  unsigned char displayHash[hashSize];
+  unsigned char displayIp[ipSize];
+
+
+  for (unsigned int i = 0; i < *size; i++)
+  {
+    if(strcmp((char*)hashTable[i].ip,(char*)h->ip)==0 && strcmp((char*)hashTable[i].hash,(char*)h->hash))
+    {
+      indexHash= i; // now we know the index in the array
+      strcpy((char *) displayIp,(char *)hashTable[indexHash].ip);
+      strcpy((char *) displayHash,(char *)hashTable[indexHash].hash);
+    }
+  }
+
+  //last inserted server i now at i-1
+  int last_index = (*hashCursor)-1;
+
+  //now move all the next server in the list to the position n-1
+  if(*hashCursor>0 && indexHash>1)
+  {
+    for (int i = indexHash; i < last_index; i++)
+    {
+      hashTable[i] = hashTable[i+1];
+    }
+  }
+  printf("Hash deleted\n");
+  (*hashCursor)--;
+}
