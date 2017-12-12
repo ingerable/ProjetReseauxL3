@@ -53,27 +53,31 @@ unsigned int serverCursor = 0;
 //my server
 struct server *global_myserv = NULL;
 
+//mutex delete
+pthread_mutex_t mutex_delete_hash;
+
 //wait for main thread to give it uptodate notification meanwhile timing out
 void *obsoleteReceiver(void *h)
 {
   struct hash *bindedHash = (struct hash*)h;
-  unsigned int time=0;
-  while(time<30)
+  unsigned int timer=0;
+  while(timer<10)
   {
     if(bindedHash->uptodate==1)
     {
-      printf("Up to date notification, restart timer...\n");
       bindedHash->uptodate=0;//reinit of the notification
-      time=0;
+      timer=0;
     }
     else
     {
       sleep(1);
-      time++;
+      timer++;
     }
   }
   //delete hash
+  pthread_mutex_lock(&mutex_delete_hash);
   deleteHash(hashTable,&hashCursor,bindedHash,&hashTableSize);
+  pthread_mutex_unlock(&mutex_delete_hash);
   printf("Hash %s timed out\n",bindedHash->hash);
   return 0;
 }
@@ -247,7 +251,7 @@ int main(int argc, char **argv)
 	}
 
 	// init local addr structure and other params
-		inet_pton(AF_INET6, argv[1], &(my_addr.sin6_addr));
+	inet_pton(AF_INET6, argv[1], &(my_addr.sin6_addr));
 	my_addr.sin6_family      = AF_INET6;
 	my_addr.sin6_port        = htons(atoi(argv[2]));
 	my_addr.sin6_addr 		= in6addr_any;
@@ -263,6 +267,9 @@ int main(int argc, char **argv)
 
 	//thread creation
 	pthread_t serv_thread;
+
+  //mutex init
+  pthread_mutex_init(&mutex_delete_hash,NULL);
 
 	//arguments for the thread function
 	struct server *myServ =malloc(sizeof(server));
@@ -317,9 +324,9 @@ int main(int argc, char **argv)
 			ps = unserializeMessage(b);
 
 			//values that will be send
-			unsigned short s= numberOfIp(ps->hash, hashTable,&hashTableSize);
+			unsigned short s= numberOfIp(ps->hash, hashTable,&hashCursor);
 			unsigned char *ips = malloc(sizeof(char)*s*ipSize);
-			ips = ipsForHash(ps->hash, hashTable,s,&hashTableSize);
+			ips = ipsForHash(ps->hash, hashTable,s,&hashCursor);
 
 			// send the first message to tells how much ips there will be in the packet
 		  if(sendto(sockfd, &s, sizeof(short), 0
@@ -356,7 +363,7 @@ int main(int argc, char **argv)
       //init the up to date data
       h->uptodate=0;
 
-      if(hashExist(hashTable,h,&hashTableSize)!=0)
+      if(hashExist(hashTable,h,&hashCursor)==1)
       {
         //add the hash to the hashtable
   			h = addHash(hashTable,&hashCursor,h,&hashTableSize);
@@ -383,6 +390,7 @@ int main(int argc, char **argv)
   			 perror("pthread_create");
   			 return EXIT_FAILURE;
   			}
+        adUptodate(hashTable,&hashCursor,h);
       }
       else
       {
@@ -465,7 +473,9 @@ int main(int argc, char **argv)
 			//add the ip
 			memcpy(h->ip,ps->ip,ipSize);
 
-      if(hashExist(hashTable,h,&hashTableSize)!=0)
+      h->uptodate=0;
+
+      if(hashExist(hashTable,h,&hashCursor)==1)
       {
         //add the hash to the hashtable
   			h = addHash(hashTable,&hashCursor,h,&hashTableSize);
@@ -482,6 +492,7 @@ int main(int argc, char **argv)
          perror("pthread_create");
          return EXIT_FAILURE;
         }
+        adUptodate(hashTable,&hashCursor,h);
       }
       else
       {

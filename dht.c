@@ -193,10 +193,10 @@ void printIP6(unsigned char *ips, unsigned short occurences,unsigned char *hash)
 
 
 //count the number of occurences for one hash in the hashtable
-unsigned short numberOfIp(unsigned char *hash, struct hash h[],unsigned int *hashTableSize)
+unsigned short numberOfIp(unsigned char *hash, struct hash h[],unsigned int *hashCursor)
 {
   unsigned short occurences = 0;
-  for (size_t i = 0; i < *hashTableSize; i++)
+  for (size_t i = 0; i < *hashCursor; i++)
   {
     if(strcmp((char*)hash,(char*)h[i].hash)==0)
     {
@@ -207,11 +207,11 @@ unsigned short numberOfIp(unsigned char *hash, struct hash h[],unsigned int *has
 }
 
 //return all the occurences for one hash in an char[occurences]
-unsigned char *ipsForHash(unsigned char *hash, struct hash h[],unsigned short occurences,unsigned int *hashTableSize)
+unsigned char *ipsForHash(unsigned char *hash, struct hash h[],unsigned short occurences,unsigned int *hashCursor)
 {
   unsigned char *oc = malloc(occurences*sizeof(char)*ipSize);
 
-  for (size_t i = 0; i < *hashTableSize; i++)
+  for (size_t i = 0; i < *hashCursor; i++)
   {
     if(strcmp((char*)hash,(char*)h[i].hash)==0)
     {
@@ -321,10 +321,9 @@ void deleteHash(struct hash *hashTable,unsigned int *hashCursor, struct hash *h,
   unsigned char displayHash[hashSize];
   unsigned char displayIp[ipSize];
 
-
   for (unsigned int i = 0; i < *size; i++)
   {
-    if(strcmp((char*)hashTable[i].ip,(char*)h->ip)==0 && strcmp((char*)hashTable[i].hash,(char*)h->hash))
+    if(strcmp((char*)hashTable[i].ip,(char*)h->ip)==0 && strcmp((char*)hashTable[i].hash,(char*)h->hash)==0)
     {
       indexHash= i; // now we know the index in the array
       strcpy((char *) displayIp,(char *)hashTable[indexHash].ip);
@@ -352,19 +351,19 @@ void adUptodate(struct hash *hashTable,unsigned int *hashCursor, struct hash *h)
 {
   for (unsigned int i = 0; i < *hashCursor; i++)
   {
-    if(strcmp((char*)hashTable[i].ip,(char*)h->ip)==0 && strcmp((char*)hashTable[i].hash,(char*)h->hash))
+    if(strcmp((char*)hashTable[i].hash,(char*)h->hash)==0)
     {
-      h->uptodate=1;//Notify the thread with a tiny data
+      hashTable[i].uptodate=1;//Notify the thread with a tiny data
     }
   }
 }
 
 //search if hash h is in the hash table, return 0 if found else return 1
-int hashExist(struct hash *hashTable, struct hash *h, unsigned int *size)
+int hashExist(struct hash *hashTable, struct hash *h, unsigned int *hashCursor)
 {
-  for (unsigned int i = 0; i < *size; i++)
+  for (unsigned int i = 0; i < *hashCursor; i++)
   {
-    if(strcmp((char*)hashTable[i].ip,(char*)h->ip)==0 && strcmp((char*)hashTable[i].hash,(char*)h->hash))
+    if(strcmp((char*)hashTable[i].ip,(char*)h->ip)==0 && strcmp((char*)hashTable[i].hash,(char*)h->hash)==0)
     {
       return 0;
     }
