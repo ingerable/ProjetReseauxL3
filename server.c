@@ -61,7 +61,6 @@ void *keepAliveReceiver(void *s)
   unsigned int time=0;
   while(time<timeout)
   {
-		printf("Ka value = %d\n",bindedServ->ka);
     if(bindedServ->ka==1)
     {
 			printf("Keep alive notification, restart timer...\n");
@@ -77,6 +76,7 @@ void *keepAliveReceiver(void *s)
 	//delete the server
 	deleteServer(serverTable,&serverCursor,bindedServ,&serverTableSize);
 	printf("Server %s connection timed out\n", bindedServ->ip);
+	bindedServ->ka=99;
 	return 0;
 }
 
@@ -85,16 +85,16 @@ void *keepAliveSender(void *s)
 {
 	struct server *bindedServ = s;
 	unsigned int time=0;
-	while(bindedServ!=NULL)
+	while(bindedServ->ka!=99)
 	{
 		if(time==5)
 		{
 			time=0;
 			buffer *b = new_buffer();
 			serializeChar(b,5);
-			serializeShort(b,bindedServ->port);
+			serializeShort(b,global_myserv->port);
 			//send keep alive message
-			sendTo((unsigned short)global_myserv->port,(char*)bindedServ->ip,(unsigned char*)b->data,sizeof(unsigned char)+sizeof(unsigned short));
+			sendTo((unsigned short)bindedServ->port,(char*)bindedServ->ip,(unsigned char*)b->data,sizeof(unsigned char)+sizeof(unsigned short));
 			free(b);
 		}
 		else
@@ -155,9 +155,10 @@ void *serverRequest(void *s)
 			struct server *newServ = malloc(sizeof(newServ));
 			newServ->port = (unsigned short)atoi(port);
 			memcpy((char*)newServ->ip,&ip,ipSize);
+			newServ->ka=0;
 
 			//store the new server in our serverTable
-			addServer(serverTable,&serverCursor,newServ,&serverTableSize);
+			newServ = addServer(serverTable,&serverCursor,newServ,&serverTableSize);
 
 			/*
 			start the keep alive engine
@@ -358,7 +359,7 @@ int main(int argc, char **argv)
 			s->ka=0;
 
 			//store the new server in our serverTable
-			addServer(serverTable,&serverCursor,s,&serverTableSize);
+			s = addServer(serverTable,&serverCursor,s,&serverTableSize);
 
 			/*
 			start the keep alive engine
@@ -434,7 +435,7 @@ int main(int argc, char **argv)
 			memcpy((char*)s->ip,&str,ipSize);
 			s->port=port;
 
-			printf("Keep alive message from %s ...\n",s->ip);
+			printf("Keep alive message from %s port : %d ...\n",s->ip,s->port);
 
 			//keep alive advertisement for the binded server thread
 			adKeepAlive(serverTable,&serverCursor,s);

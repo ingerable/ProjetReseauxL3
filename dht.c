@@ -258,7 +258,7 @@ void deleteServer(struct server *serverTable,unsigned int *serverCursor,struct s
 }
 
 //add a server to the server list
-void addServer(struct server *serverTable,unsigned int *serverCursor, struct server *s, unsigned int *size)
+struct server* addServer(struct server *serverTable,unsigned int *serverCursor, struct server *s, unsigned int *size)
 {
   //enough memory
   if(*serverCursor<*size)
@@ -275,8 +275,7 @@ void addServer(struct server *serverTable,unsigned int *serverCursor, struct ser
     printf("Server ip %s with port %u added \n",serverTable[*serverCursor].ip,serverTable[*serverCursor].port );
     (*serverCursor)++;
   }
-  s=&(serverTable[*serverCursor-1]);
-
+  return &(serverTable[(*serverCursor)-1]);
 }
 
 //advertise server thread we got an KeepAlive message from the binded server

@@ -51,7 +51,7 @@ unsigned short numberOfIp(unsigned char *hash, struct hash h[],unsigned int *has
 unsigned char *ipsForHash(unsigned char *hash, struct hash h[],unsigned short occurences,unsigned int *hashTableSize);
 
 //add and delete a server
-void addServer(struct server *serverTable,unsigned int *serverCursor, struct server *s, unsigned int *size);
+struct server* addServer(struct server *serverTable,unsigned int *serverCursor, struct server *s, unsigned int *size);
 void deleteServer(struct server *serverTable,unsigned int *serverCursor,struct server *s,unsigned int *size);
 
 //keep alive (advertise server thread waiting for info)
