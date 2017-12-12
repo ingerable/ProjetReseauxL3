@@ -73,6 +73,7 @@ void *obsoleteReceiver(void *h)
     }
   }
   //delete hash
+  deleteHash(hashTable,&hashCursor,bindedHash,&hashTableSize);
   printf("Hash %s timed out\n",bindedHash->hash);
   return 0;
 }
@@ -355,18 +356,26 @@ int main(int argc, char **argv)
       //init the up to date data
       h->uptodate=0;
 
-			//add the hash to the hashtable
-			addHash(hashTable,&hashCursor,h,&hashTableSize);
+      if(hashExist(hashTable,h,&hashTableSize)!=0)
+      {
+        //add the hash to the hashtable
+  			addHash(hashTable,&hashCursor,h,&hashTableSize);
 
-			//share the new hash with all the registered server( but we have to change the type of the message first to PUT request from server)
-			ps->type=4;
-			buffer *b = new_buffer();
-			serializeMessage(ps,b);
+  			//share the new hash with all the registered server( but we have to change the type of the message first to PUT request from server)
+  			ps->type=4;
+  			buffer *b = new_buffer();
+  			serializeMessage(ps,b);
 
-			for (size_t i = 0; i < serverCursor; i++)
-			{
-				sendTo(serverTable[i].port,(char*)serverTable[i].ip,(unsigned char*)b->data,sizeof(message));
-			}
+  			for (size_t i = 0; i < serverCursor; i++)
+  			{
+  				sendTo(serverTable[i].port,(char*)serverTable[i].ip,(unsigned char*)b->data,sizeof(message));
+  			}
+      }
+      else
+      {
+        printf("Hash %s w/ IP %s already exist\n",h->hash,h->ip);
+      }
+
 		}
 		else if(type==2) //connect request
 		{

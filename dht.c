@@ -343,8 +343,20 @@ void deleteHash(struct hash *hashTable,unsigned int *hashCursor, struct hash *h,
       hashTable[i] = hashTable[i+1];
     }
   }
-  printf("Hash deleted\n");
+  printf("Hash %s w/ IP %s deleted\n",displayHash,displayIp);
   (*hashCursor)--;
+}
+
+//advertise binded hash thread that it is up to date
+void adUptodate(struct hash *hashTable,unsigned int *hashCursor, struct hash *h)
+{
+  for (unsigned int i = 0; i < *hashCursor; i++)
+  {
+    if(strcmp((char*)hashTable[i].ip,(char*)h->ip)==0 && strcmp((char*)hashTable[i].hash,(char*)h->hash))
+    {
+      h->uptodate=1;//Notify the thread with a tiny data
+    }
+  }
 }
 
 //search if hash h is in the hash table, return 0 if found else return 1
