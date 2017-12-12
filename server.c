@@ -359,7 +359,7 @@ int main(int argc, char **argv)
       if(hashExist(hashTable,h,&hashTableSize)!=0)
       {
         //add the hash to the hashtable
-  			addHash(hashTable,&hashCursor,h,&hashTableSize);
+  			h = addHash(hashTable,&hashCursor,h,&hashTableSize);
 
   			//share the new hash with all the registered server( but we have to change the type of the message first to PUT request from server)
   			ps->type=4;
@@ -370,10 +370,23 @@ int main(int argc, char **argv)
   			{
   				sendTo(serverTable[i].port,(char*)serverTable[i].ip,(unsigned char*)b->data,sizeof(message));
   			}
+
+        /*
+  			start the uptodate hash engine
+  			*/
+  			//thread creation
+  			pthread_t obsoleteR;
+
+  			//thread obsolete receiver
+  			if(pthread_create(&obsoleteR, NULL, obsoleteReceiver, h) == -1)
+  			{
+  			 perror("pthread_create");
+  			 return EXIT_FAILURE;
+  			}
       }
       else
       {
-        printf("Hash %s w/ IP %s already exist\n",h->hash,h->ip);
+        printf("Hash %s w/ IP %s already exists\n",h->hash,h->ip);
       }
 
 		}
@@ -452,8 +465,29 @@ int main(int argc, char **argv)
 			//add the ip
 			memcpy(h->ip,ps->ip,ipSize);
 
-			//add the hash to the hashtable
-			addHash(hashTable,&hashCursor,h,&hashTableSize);
+      if(hashExist(hashTable,h,&hashTableSize)!=0)
+      {
+        //add the hash to the hashtable
+  			h = addHash(hashTable,&hashCursor,h,&hashTableSize);
+
+        /*
+  			start the uptodate hash engine
+  			*/
+  			//thread creation
+        pthread_t obsoleteR;
+
+        //thread obsolete receiver
+        if(pthread_create(&obsoleteR, NULL, obsoleteReceiver, h) == -1)
+        {
+         perror("pthread_create");
+         return EXIT_FAILURE;
+        }
+      }
+      else
+      {
+        printf("Hash %s w/ IP %s already exists\n",h->hash,h->ip);
+      }
+
 		}
 		else if(type==5)//Keep alive from server
 		{

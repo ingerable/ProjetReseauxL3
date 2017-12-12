@@ -291,7 +291,7 @@ void adKeepAlive(struct server *serverTable,unsigned int *serverCursor,struct se
 }
 
 //add an hash to the hash table and check the memory allocation at the same time
-void addHash(struct hash *hashTable,unsigned int *hashCursor, struct hash *h, unsigned int *size)
+struct hash* addHash(struct hash *hashTable,unsigned int *hashCursor, struct hash *h, unsigned int *size)
 {
   //enough memory
   if(*hashCursor<*size)
@@ -308,7 +308,7 @@ void addHash(struct hash *hashTable,unsigned int *hashCursor, struct hash *h, un
     printf("hash : %s associated with ip %s added\n",hashTable[*hashCursor].hash,hashTable[*hashCursor].ip);
     (*hashCursor)++;
   }
-
+  return &(hashTable[(*hashCursor)-1]);
 }
 
 //delete an hash
