@@ -1,5 +1,5 @@
 #define hashSize 1000
-#define ipSize 128
+#define ipSize 39
 #define timeout 20
 
 typedef struct message{
