@@ -237,7 +237,7 @@ int main(int argc, char **argv)
 	struct sockaddr_in6 client;
 
 	// check the number of args on command line
-	if(argc > 5)
+	if(argc != 3)
 	{
 		printf("Usage: %s IP port\n", argv[0]);
 		exit(-1);
@@ -260,7 +260,7 @@ int main(int argc, char **argv)
 	{
 		memcpy((char*)ipNumber,(char*)argv[1],ipSize);
 	}
-	
+
 	inet_pton(AF_INET6, ipNumber, &(my_addr.sin6_addr));
 	my_addr.sin6_family      = AF_INET6;
 	my_addr.sin6_port        = htons(atoi(argv[2]));

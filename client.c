@@ -44,7 +44,7 @@ int main(int argc, char **argv)
     struct sockaddr_in6 dest;
 
     // check the number of args on command line
-	if(argc > 6)
+	if(argc > 6 || argc < 5)
     {
         printf("USAGE: %s IP PORT COMMANDE HASH [IP]\n", argv[0]);
         exit(-1);
