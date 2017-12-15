@@ -1,0 +1,22 @@
+.\"
+.\" Manpage for client program
+.\"
+
+.TH CLIENT 1 "December 14, 2017" "Version 1.0" "client manual"
+.SH NAME
+client \- Run a client sending or receiving hash to a server
+.SH SYNOPSIS
+client [IPV6] [PORT] [COMMAND] [HASH] [IPV6]
+.SH DESCRIPTION
+Client sending or receiving hash from server. The client program can send hash with binded IP to a server or receive all IP associated to a specific hash from the server.
+After completing command, the client program stop.
+.SH OPTIONS
+Client supports PUT mode and GET mode. In PUT mode, the client program needs an IP with the hash.
+.PP
+[PUT] Send the specified argument hash with binded IP to the specified server.
+.PP
+[GET] Receive all the binded IP for specified hash from specified server.
+.SH SEE ALSO
+server(1)
+.SH AUTHOR
+Jorick Nuss

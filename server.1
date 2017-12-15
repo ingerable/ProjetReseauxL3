@@ -1,23 +1,22 @@
 .\"
-.\" Manpage for server programm
+.\" Manpage for server program
 .\"
 
 .TH SERVER 1 "December 10, 2017" "Version 1.0" "server manual"
-.SH NAME 
+.SH NAME
 server \- Run a distributed hash server
 .SH SYNOPSIS
 server [IPV6] [PORT]
 .SH DESCRIPTION
-Distributed hash server. The server programm can store hash sended by client programm, it can send all the associated ip for an hash. It can connect to other instance of server, so he will share all of his
+Distributed hash server. The server program can store hash sent by client program, it can send all the associated IP for an hash. It can connect to other instance of server, so he will share all of his
 hash and all the future hash it will receive from client.
 .SH OPTIONS
-There is no option when you execute the programm but you send input on STDIN for the following opperations :
+There is no option when you execute the program but you send input on STDIN for the following operations :
 .PP
-[connect] Connect to an other instance of server, the ip and the port of the server you want to connect to will be asked
+[connect] Connect to an other instance of server, the IP and the port of the server you want to connect to will be asked
 .PP
-[disconnect] Disconnect the server from all the servers it was connected and end the programm
+[disconnect] Disconnect the server from all the servers it was connected and end the program
 .SH SEE ALSO
 client(1)
 .SH AUTHOR
 Jules Van Assche
-
